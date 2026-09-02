@@ -174,3 +174,7 @@ sbt compile
 Metals generates `project/metals.sbt` to enable sbt-bloop, which has no sbt 2 build published.
 If that file reappears, sbt 2 will refuse to load the build; delete it and let Metals use sbt's
 own BSP server instead.
+
+## License
+
+BSD 3-Clause. See [LICENSE](LICENSE).
