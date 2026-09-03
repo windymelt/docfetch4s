@@ -205,10 +205,41 @@ as-is. `--quiet` silences the progress output.
 ## Development
 
 ```
-sbt test            # runs the munit suites on Scala Native
-sbt "testOnly *"    # sbt 2 selects tests incrementally; this forces the whole suite
-sbt compile
+sbt test                              # runs the munit suites on Scala Native
+sbt "testOnly *"                      # sbt 2 selects tests incrementally; this runs everything
+sbt "scalafmtAll; scalafmtSbt"        # format
+sbt scalafixAll                       # organize imports, check DisableSyntax
 ```
+
+CI runs the format and scalafix checks before the tests, so run them locally first.
+
+`DisableSyntax` is fully enabled. The character-scanning loops in `Html` and `DocPage` turn off
+`var` and `while` for the methods that need them, since the locals never leave those methods.
+New code is checked normally — do not widen those regions to cover it.
+
+`main` is protected: changes go through a pull request, and `ci-passed` must succeed. Release
+tags must be signed.
+
+```sh
+git switch -c some-change
+# ... commit ...
+git push -u origin some-change
+gh pr create
+```
+
+### Releasing
+
+Pushing a `v` tag builds the binary and publishes a GitHub Release with a checksum, PGP
+signatures and a provenance attestation. Releases are immutable once published, so a correction
+means a new tag.
+
+```sh
+git tag -s v0.1.0 -m "v0.1.0"
+git push origin v0.1.0
+```
+
+This requires the `PGP_SECRET` and `PGP_PASSPHRASE` repository secrets, created per repository
+with [scala-pgp-bootstrap](https://github.com/windymelt/scala-pgp-bootstrap).
 
 Metals generates `project/metals.sbt` to enable sbt-bloop, which has no sbt 2 build published.
 If that file reappears, sbt 2 will refuse to load the build; delete it and let Metals use sbt's
