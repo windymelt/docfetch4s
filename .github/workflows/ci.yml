@@ -12,13 +12,13 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-java@v6
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-java@dd06d9cba3e5552c54d9f8ea23572deb30010f7c # v6
         with:
           distribution: temurin
           java-version: 21
           cache: sbt
-      - uses: sbt/setup-sbt@v1
+      - uses: sbt/setup-sbt@c7d2d6258b4bd0d3ec5129e6b3453199d3c79729 # v1
       - name: Check formatting
         run: sbt 'scalafmtCheckAll; scalafmtSbtCheck'
       - name: Check scalafix rules
@@ -28,13 +28,13 @@ jobs:
     needs: lint
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-java@v6
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-java@dd06d9cba3e5552c54d9f8ea23572deb30010f7c # v6
         with:
           distribution: temurin
           java-version: 21
           cache: sbt
-      - uses: sbt/setup-sbt@v1
+      - uses: sbt/setup-sbt@c7d2d6258b4bd0d3ec5129e6b3453199d3c79729 # v1
 
       - name: Install native build dependencies
         run: sudo apt-get update && sudo apt-get install -y clang zlib1g-dev libssl-dev
@@ -43,7 +43,7 @@ jobs:
       # so it is built from source and cached.
       - name: Cache s2n-tls
         id: cache-s2n
-        uses: actions/cache@v6
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: ~/s2n-install
           key: s2n-${{ env.S2N_VERSION }}-${{ runner.os }}
