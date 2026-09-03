@@ -33,7 +33,7 @@ class MetadataSuite extends munit.FunSuite:
   test("skips pre-releases when resolving 'latest'") {
     val withRc = xml.replace(
       "<version>2.13.0</version>",
-      "<version>2.13.0</version>\n      <version>2.14.0-RC1</version>"
+      "<version>2.13.0</version>\n      <version>2.14.0-RC1</version>",
     )
     assertEquals(MavenCentral.parseMetadata(withRc).newest, Some("2.13.0"))
   }

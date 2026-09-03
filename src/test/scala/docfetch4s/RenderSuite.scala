@@ -19,7 +19,7 @@ class RenderSuite extends munit.FunSuite:
       coords,
       "f",
       Vector(hit("f", "cats", "def", ""), hit("f", "cats.data", "def", "")),
-      brief = false
+      brief = false,
     )
     assert(two.contains("2 matches for"), two)
   }
@@ -63,8 +63,8 @@ class RenderSuite extends munit.FunSuite:
       List("Source" -> "X.scala"),
       List(
         Member("a", "a", "def a: Int", "", ""),
-        Member("b", "b", "def b: Int", "", "Inherited from: Base")
-      )
+        Member("b", "b", "def b: Int", "", "Inherited from: Base"),
+      ),
     )
     val e = Entry("X", "X", "pkg", "trait", "", "pkg/X.html#", false)
     val s = Render.typePage(coords, e, page, full = false, inherited = false)

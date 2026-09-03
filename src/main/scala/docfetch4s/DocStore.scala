@@ -13,21 +13,22 @@ final class DocStore(cache: Cache, maven: MavenCentral, log: Log):
   private def resolveVersion(org: String, artifact: String, spec: String): IO[String] =
     if !VersionQuery.isDynamic(spec) then IO.pure(spec)
     else
-      Coordinates.artifactCandidates(artifact)
+      Coordinates
+        .artifactCandidates(artifact)
         .foldLeftM(Option.empty[(String, String)]) { (found, art) =>
           found match
             case Some(_) => IO.pure(found)
-            case None =>
+            case None    =>
               maven.metadata(org, art).map(_.flatMap(select(_, spec)).map(art -> _))
         }
         .flatMap {
           case Some((art, v)) => log.info(s"Resolved $spec to $org:$art:$v").as(v)
-          case None =>
+          case None           =>
             IO.raiseError(
               new DocfetchError(
                 s"could not resolve version '$spec' for $org:$artifact " +
-                  "(no matching version published; try the versions command)"
-              )
+                  "(no matching version published; try the versions command)",
+              ),
             )
         }
 
@@ -44,15 +45,15 @@ final class DocStore(cache: Cache, maven: MavenCentral, log: Log):
       val cands = Coordinates.candidates(org, artifact, v)
       cands.findM(cache.isCached).flatMap {
         case Some(c) => IO.pure(c)
-        case None =>
+        case None    =>
           cands.findM(c => maven.exists(javadocPath(c))).flatMap {
             case Some(c) => IO.pure(c)
-            case None =>
+            case None    =>
               IO.raiseError(
                 new DocfetchError(
                   s"no javadoc found for $org:$artifact:$v " +
-                    s"(tried artifact names: ${cands.map(_.artifact).mkString(", ")})"
-                )
+                    s"(tried artifact names: ${cands.map(_.artifact).mkString(", ")})",
+                ),
               )
           }
       }
@@ -68,7 +69,7 @@ final class DocStore(cache: Cache, maven: MavenCentral, log: Log):
           maven.download(
             javadocPath(c),
             dest,
-            size => size.fold(IO.unit)(s => log.info(f"  size: ${s.toDouble / 1024 / 1024}%.1f MB"))
+            size => size.fold(IO.unit)(s => log.info(f"  size: ${s.toDouble / 1024 / 1024}%.1f MB")),
           ) *> log.info(s"Cached to $dest").as(dest)
     }
 
@@ -81,6 +82,7 @@ final class DocStore(cache: Cache, maven: MavenCentral, log: Log):
     yield docs
 
   def versions(org: String, artifact: String): IO[List[(String, List[String])]] =
-    Coordinates.artifactCandidates(artifact)
+    Coordinates
+      .artifactCandidates(artifact)
       .traverse(art => maven.metadata(org, art).map(art -> _.map(_.versions).getOrElse(Nil)))
       .map(_.filter(_._2.nonEmpty))

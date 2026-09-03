@@ -2,8 +2,7 @@ package docfetch4s
 
 /** バージョン指定の解決。
   *
-  * 座標のバージョン欄には実際の版のほか `latest` と `2.13.+` のような系列指定を書ける。
-  * どちらもリポジトリのバージョン一覧が要るため、解決は取得後に行う。
+  * 座標のバージョン欄には実際の版のほか `latest` と `2.13.+` のような系列指定を書ける。 どちらもリポジトリのバージョン一覧が要るため、解決は取得後に行う。
   */
 object VersionQuery:
 
@@ -31,7 +30,7 @@ object VersionQuery:
 
   /** 指定に合う版を選ぶ。合うものが無ければ None。 */
   def resolve(versions: List[String], spec: String): Option[String] =
-    val prefix = seriesPrefix(spec)
+    val prefix     = seriesPrefix(spec)
     val candidates =
       if prefix.nonEmpty then versions.filter(v => Version(v).inSeries(prefix))
       else versions

@@ -18,13 +18,13 @@ object Main
                  |series such as 2.13.+ for the newest stable 2.13.x. Pre-releases (-RC, -M, -alpha,
                  |-SNAPSHOT and CI commit hashes) are skipped unless a line has nothing else.
                  |Run `versions` to see what a library publishes.""".stripMargin,
-      version = AppInfo.version
+      version = AppInfo.version,
     ):
 
   // --- 共通のオプション -----------------------------------------------------
 
   private def validated(
-      r: Either[String, (String, String, String)]
+    r: Either[String, (String, String, String)],
   ): ValidatedNel[String, (String, String, String)] =
     r match
       case Right(t) => Validated.valid(t)
@@ -32,8 +32,7 @@ object Main
 
   /** 座標は `org:artifact:version` の 1 引数、または `--org/--artifact/--version` で指定する。
     *
-    * バージョンには `latest` を指定できる。アーティファクト名の Scala 接尾辞（`_3` など）は
-    * 省略でき、その場合は `_3` → `_2.13` → 接尾辞なし の順に実在するものを探す。
+    * バージョンには `latest` を指定できる。アーティファクト名の Scala 接尾辞（`_3` など）は 省略でき、その場合は `_3` → `_2.13` → 接尾辞なし の順に実在するものを探す。
     */
   private val coords: Opts[(String, String, String)] =
     Opts
@@ -46,10 +45,10 @@ object Main
           Opts.option[String](
             "version",
             "Version: 2.13.0, or latest, or 2.13.+ for the newest 2.13.x",
-            metavar = "version"
-          )
+            metavar = "version",
+          ),
         ).tupled
-          .mapValidated { case (o, a, v) => validated(Coordinates.validate(o, a, v)) }
+          .mapValidated { case (o, a, v) => validated(Coordinates.validate(o, a, v)) },
       )
 
   /** 座標の書き方。サブコマンド単体のヘルプだけを読んでも分かるよう、各 header に添える。 */
@@ -65,12 +64,12 @@ object Main
 
   private val jsonFlag  = Opts.flag("json", "Emit JSON instead of text").orFalse
   private val quietFlag = Opts.flag("quiet", "Suppress progress output on stderr").orFalse
-  private val kindsOpt =
+  private val kindsOpt  =
     Opts
       .options[String](
         "kind",
         "Filter by kind: def, val, class, trait, object, type, package",
-        metavar = "kind"
+        metavar = "kind",
       )
       .orEmpty
       .map(_.toList.toSet)
@@ -78,14 +77,14 @@ object Main
   // --- サブコマンド ---------------------------------------------------------
 
   private final case class SearchArgs(
-      coords: (String, String, String),
-      query: String,
-      kinds: Set[String],
-      limit: Int,
-      searchDocs: Boolean,
-      brief: Boolean,
-      json: Boolean,
-      quiet: Boolean
+    coords: (String, String, String),
+    query: String,
+    kinds: Set[String],
+    limit: Int,
+    searchDocs: Boolean,
+    brief: Boolean,
+    json: Boolean,
+    quiet: Boolean,
   )
 
   private val searchCmd: Opts[SearchArgs] =
@@ -100,17 +99,17 @@ object Main
         Opts.flag("docs", "Also search documentation text").orFalse,
         Opts.flag("brief", "Print signatures only, without descriptions").orFalse,
         jsonFlag,
-        quietFlag
+        quietFlag,
       ).mapN(SearchArgs.apply)
     })
 
   private final case class ShowArgs(
-      coords: (String, String, String),
-      target: String,
-      full: Boolean,
-      inherited: Boolean,
-      json: Boolean,
-      quiet: Boolean
+    coords: (String, String, String),
+    target: String,
+    full: Boolean,
+    inherited: Boolean,
+    json: Boolean,
+    quiet: Boolean,
   )
 
   private val showCmd: Opts[ShowArgs] =
@@ -121,15 +120,15 @@ object Main
         Opts.flag("full", "Print each member's full description").orFalse,
         Opts.flag("inherited", "Include inherited members").orFalse,
         jsonFlag,
-        quietFlag
+        quietFlag,
       ).mapN(ShowArgs.apply)
     })
 
   private final case class ListArgs(
-      coords: (String, String, String),
-      kinds: Set[String],
-      json: Boolean,
-      quiet: Boolean
+    coords: (String, String, String),
+    kinds: Set[String],
+    json: Boolean,
+    quiet: Boolean,
   )
 
   private val listCmd: Opts[ListArgs] =
@@ -138,9 +137,9 @@ object Main
     })
 
   private final case class FetchArgs(
-      coords: (String, String, String),
-      force: Boolean,
-      quiet: Boolean
+    coords: (String, String, String),
+    force: Boolean,
+    quiet: Boolean,
   )
 
   private val fetchCmd: Opts[FetchArgs] =
@@ -148,15 +147,15 @@ object Main
       Command("fetch", "Download an artifact's javadoc into the cache." + coordsNote) {
         (coords, Opts.flag("force", "Re-download even if already cached").orFalse, quietFlag)
           .mapN(FetchArgs.apply)
-      }
+      },
     )
 
   private final case class VersionsArgs(
-      orgArtifact: (String, String),
-      matching: Option[String],
-      all: Boolean,
-      json: Boolean,
-      quiet: Boolean
+    orgArtifact: (String, String),
+    matching: Option[String],
+    all: Boolean,
+    json: Boolean,
+    quiet: Boolean,
   )
 
   /** versions はバージョンを取らないので、`org artifact` と `org:artifact` の両方を受ける。 */
@@ -174,7 +173,7 @@ object Main
             Coordinates.parseOrgArtifact(s) match
               case Right(t) => Validated.valid(t)
               case Left(e)  => Validated.invalidNel(e)
-          }
+          },
       )
 
   private val versionsHeader =
@@ -206,14 +205,14 @@ object Main
               "matching",
               "Restrict to one release line: 2.13 selects 2.13.x, 2 selects 2.x " +
                 "(2.13.+ and 2.13.* are accepted too)",
-              metavar = "series"
+              metavar = "series",
             )
             .orNone,
           Opts.flag("all", "List every version instead of a summary").orFalse,
           jsonFlag,
-          quietFlag
+          quietFlag,
         ).mapN(VersionsArgs.apply)
-      }
+      },
     )
 
   private enum CacheAction:
@@ -227,7 +226,7 @@ object Main
         Opts.subcommand("clear", "Delete the entire cache")(Opts(CacheAction.Clear)) orElse
         Opts.subcommand(
           "remove",
-          "Delete one artifact from the cache; needs a literal version, not latest or 2.13.+"
+          "Delete one artifact from the cache; needs a literal version, not latest or 2.13.+",
         )(coords.map(CacheAction.Remove.apply))
     }
 
@@ -240,7 +239,7 @@ object Main
 
   /** 座標を解決して javadoc.jar を 1 回だけ開く、search / show / list の共通部分。 */
   private def withDocs[A](c: (String, String, String), quiet: Boolean)(
-      f: ArtifactDocs => IO[A]
+    f: ArtifactDocs => IO[A],
   ): IO[A] =
     withStore(quiet) { store =>
       store.resolve(c._1, c._2, c._3).flatMap(coords => store.open(coords).use(f))
@@ -254,7 +253,7 @@ object Main
         val hits = Search.query(entries, a.query, a.kinds, a.searchDocs, a.limit)
         out(
           if a.json then Render.searchJson(docs.coords, a.query, hits)
-          else Render.search(docs.coords, a.query, hits, a.brief)
+          else Render.search(docs.coords, a.query, hits, a.brief),
         )
       }
     }
@@ -271,12 +270,12 @@ object Main
     else
       types.toList.traverse_ { e =>
         docs.page(e.page).flatMap {
-          case None => IO.blocking(System.err.println(s"page not found in jar: ${e.page}"))
+          case None       => IO.blocking(System.err.println(s"page not found in jar: ${e.page}"))
           case Some(html) =>
             val page = DocPage.parse(html)
             out(
               if a.json then Render.typePageJson(docs.coords, e, page, a.inherited)
-              else Render.typePage(docs.coords, e, page, a.full, a.inherited)
+              else Render.typePage(docs.coords, e, page, a.full, a.inherited),
             )
         }
       }
@@ -304,15 +303,14 @@ object Main
               found.traverse_ { case (owner, ms) =>
                 out(
                   if a.json then Render.membersJson(docs.coords, owner, ms)
-                  else Render.member(docs.coords, owner, ms)
+                  else Render.member(docs.coords, owner, ms),
                 )
               }
           }
 
   private def suggest(docs: ArtifactDocs, entries: Vector[Entry], a: ShowArgs): IO[Unit] =
     val hits = Search.query(entries, a.target, Set.empty, searchDocs = false, limit = 10)
-    if hits.isEmpty then
-      IO.raiseError(new DocfetchError(s"'${a.target}' not found in ${docs.coords}"))
+    if hits.isEmpty then IO.raiseError(new DocfetchError(s"'${a.target}' not found in ${docs.coords}"))
     else
       IO.blocking(System.err.println(s"'${a.target}' not found. Closest matches:")) *>
         out(Render.search(docs.coords, a.target, hits, brief = true))
@@ -326,7 +324,7 @@ object Main
           else entries.filter(_.isTypeLike)
         out(
           if a.json then Render.listJson(docs.coords, filtered)
-          else Render.list(docs.coords, filtered)
+          else Render.list(docs.coords, filtered),
         )
       }
     }
@@ -344,7 +342,7 @@ object Main
         val summaries = found.map { case (art, vs) => VersionSummary.of(art, vs, a.matching) }
         out(
           if a.json then Render.versionsJson(org, summaries)
-          else Render.versions(org, artifact, summaries, a.all)
+          else Render.versions(org, artifact, summaries, a.all),
         )
       }
     }
@@ -362,8 +360,8 @@ object Main
           IO.raiseError(
             new DocfetchError(
               s"cache remove needs a literal version, not '$ver'; " +
-                "run cache list to see what is cached"
-            )
+                "run cache list to see what is cached",
+            ),
           )
         case CacheAction.Remove((org, art, ver)) =>
           // 接尾辞の候補すべてを対象にする。

@@ -2,8 +2,7 @@ package docfetch4s
 
 /** Maven のバージョン文字列を比較可能にしたもの。
   *
-  * Maven の正式な比較規則は複雑だが、実際のアーティファクト選びで効くのは
-  * 「数値の大小」と「正式版かどうか」の 2 点なので、そこに絞っている。
+  * Maven の正式な比較規則は複雑だが、実際のアーティファクト選びで効くのは 「数値の大小」と「正式版かどうか」の 2 点なので、そこに絞っている。
   */
 final case class Version(raw: String) extends Ordered[Version]:
   private val parsed = Version.split(raw)
@@ -16,8 +15,7 @@ final case class Version(raw: String) extends Ordered[Version]:
 
   /** 正式リリースではない版か。
     *
-    * RC / M / alpha のような明示的な印のほか、sbt-dynver が付けるコミットハッシュ
-    * （`3.7-8f2b497` や `3.7.0-15-0d069d3`）も正式版ではないものとして扱う。
+    * RC / M / alpha のような明示的な印のほか、sbt-dynver が付けるコミットハッシュ （`3.7-8f2b497` や `3.7.0-15-0d069d3`）も正式版ではないものとして扱う。
     * これらはリポジトリ上に大量に並ぶため、除外しないと最新版を見失う。
     */
   def isPreRelease: Boolean =
@@ -33,12 +31,12 @@ final case class Version(raw: String) extends Ordered[Version]:
     prefix.nonEmpty && numeric.take(prefix.length) == prefix
 
   def compare(that: Version): Int =
-    val len = math.max(numeric.length, that.numeric.length)
-    val mine = numeric.padTo(len, 0)
+    val len   = math.max(numeric.length, that.numeric.length)
+    val mine  = numeric.padTo(len, 0)
     val other = that.numeric.padTo(len, 0)
     mine.zip(other).collectFirst { case (a, b) if a != b => a.compare(b) } match
       case Some(c) => c
-      case None =>
+      case None    =>
         // 数値が同じなら、修飾子の無い版（正式版）が上。
         (qualifier.isEmpty, that.qualifier.isEmpty) match
           case (true, true)   => 0
@@ -71,8 +69,7 @@ object Version:
     val qualifier     = (leftover ++ (if tail.isEmpty then Nil else List(tail))).mkString(".")
     (numbers, qualifier)
 
-  /** 修飾子の序列。CI が吐くスナップショットは、印のついたプレリリースより下に置く。
-    * 数値だけのビルド番号は正規のリリースに近いものとして上に置く。
+  /** 修飾子の序列。CI が吐くスナップショットは、印のついたプレリリースより下に置く。 数値だけのビルド番号は正規のリリースに近いものとして上に置く。
     */
   private def rank(q: String): Int =
     val lower = q.toLowerCase

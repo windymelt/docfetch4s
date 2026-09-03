@@ -1,0 +1,104 @@
+name: Release binary
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write      # create the release
+  id-token: write      # provenance attestation
+  attestations: write  # provenance attestation
+
+env:
+  S2N_VERSION: v1.7.9
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: sbt
+      - uses: sbt/setup-sbt@v1
+
+      - name: Install native build dependencies
+        run: sudo apt-get update && sudo apt-get install -y clang zlib1g-dev libssl-dev zstd
+
+      # s2n-tls is linked statically so the published binary does not require it
+      # to be installed; neither Debian nor Ubuntu packages it.
+      - name: Cache s2n-tls
+        id: cache-s2n
+        uses: actions/cache@v6
+        with:
+          path: ~/s2n-install
+          key: s2n-${{ env.S2N_VERSION }}-${{ runner.os }}
+
+      - name: Build s2n-tls
+        if: steps.cache-s2n.outputs.cache-hit != 'true'
+        run: |
+          git clone --depth 1 --branch "$S2N_VERSION" https://github.com/aws/s2n-tls.git
+          cmake -S s2n-tls -B s2n-build \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DBUILD_SHARED_LIBS=OFF \
+            -DBUILD_TESTING=OFF \
+            -DCMAKE_INSTALL_LIBDIR=lib \
+            -DCMAKE_INSTALL_PREFIX="$HOME/s2n-install"
+          cmake --build s2n-build -j"$(nproc)"
+          cmake --install s2n-build
+
+      - name: Build the executable
+        run: |
+          S2N_LIB_DIR="$HOME/s2n-install/lib" \
+            sbt -Ddocfetch4s.release=true nativeLink
+
+      # The output path carries the Scala version, so locate the binary instead
+      # of hard-coding it.
+      - name: Locate the binary
+        run: |
+          BIN=$(find target/out -type f -name docfetch4s -perm -u+x | head -1)
+          test -n "$BIN" || { echo "binary not found" >&2; exit 1; }
+          echo "BIN=$BIN" >> "$GITHUB_ENV"
+
+      - name: Verify the binary does not need s2n at run time
+        run: |
+          readelf -d "$BIN" | grep NEEDED
+          if readelf -d "$BIN" | grep -q s2n; then
+            echo "s2n is still linked dynamically" >&2
+            exit 1
+          fi
+          "$BIN" --version
+
+      - name: Compress and checksum
+        run: |
+          NAME="docfetch4s-${GITHUB_REF_NAME}-x86_64-linux"
+          zstd -19 -o "$NAME.zst" "$BIN"
+          sha512sum ./*.zst > SHA512SUMS
+
+      - name: Sign with the release PGP key
+        env:
+          PGP_SECRET: ${{ secrets.PGP_SECRET }}
+          PGP_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }}
+        run: |
+          echo "$PGP_SECRET" | base64 -d | gpg --batch --import
+          for f in ./*.zst SHA512SUMS; do
+            gpg --batch --pinentry-mode loopback --passphrase "$PGP_PASSPHRASE" \
+              --armor --detach-sign "$f"
+          done
+
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@v4
+        with:
+          subject-path: "*.zst"
+
+      - name: Create the release
+        uses: softprops/action-gh-release@v3
+        with:
+          generate_release_notes: true
+          files: |
+            *.zst
+            *.zst.asc
+            SHA512SUMS
+            SHA512SUMS.asc

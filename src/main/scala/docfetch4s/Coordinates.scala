@@ -31,8 +31,7 @@ object Coordinates:
     if hasScalaSuffix(artifact) then List(artifact)
     else probeSuffixes.map(artifact + _)
 
-  /** 座標の各要素はキャッシュのディレクトリ名とリポジトリ上のパスの両方になる。
-    * 上位ディレクトリ参照や区切り文字を通すと意図しないパスを指すため、ここで弾く。
+  /** 座標の各要素はキャッシュのディレクトリ名とリポジトリ上のパスの両方になる。 上位ディレクトリ参照や区切り文字を通すと意図しないパスを指すため、ここで弾く。
     */
   private def isSafeSegment(s: String): Boolean =
     val separators = Set('/', '\\', ' ')
@@ -42,15 +41,14 @@ object Coordinates:
   def validateOrgArtifact(org: String, artifact: String): Either[String, (String, String)] =
     // org はドット区切りでディレクトリ階層に展開されるため、各要素を個別に検証する。
     val orgSegments = org.split('.').toList
-    if org.isEmpty || orgSegments.isEmpty || !orgSegments.forall(isSafeSegment) then
-      Left(s"invalid group ID: '$org'")
+    if org.isEmpty || orgSegments.isEmpty || !orgSegments.forall(isSafeSegment) then Left(s"invalid group ID: '$org'")
     else if !isSafeSegment(artifact) then Left(s"invalid artifact name: '$artifact'")
     else Right((org, artifact))
 
   def validate(
-      org: String,
-      artifact: String,
-      version: String
+    org: String,
+    artifact: String,
+    version: String,
   ): Either[String, (String, String, String)] =
     validateOrgArtifact(org, artifact).flatMap { case (o, a) =>
       if !isSafeSegment(version) then Left(s"invalid version: '$version'")
@@ -61,15 +59,13 @@ object Coordinates:
   def parseOrgArtifact(s: String): Either[String, (String, String)] =
     s.replace("::", ":").split(':').toList match
       case org :: artifact :: Nil => validateOrgArtifact(org, artifact)
-      case _ => Left(s"invalid coordinates: '$s' (expected org:artifact)")
+      case _                      => Left(s"invalid coordinates: '$s' (expected org:artifact)")
 
   /** `org:artifact:version` および sbt 風の `org::artifact:version` を受け付ける。
     *
-    * `::` は sbt では Scala 接尾辞の自動付与を意味する。ここでは接尾辞が無ければ
-    * どちらの書き方でも自動解決するため、挙動は同じになる。sbt からの貼り付けを
-    * そのまま通すために受け付けている。
+    * `::` は sbt では Scala 接尾辞の自動付与を意味する。ここでは接尾辞が無ければ どちらの書き方でも自動解決するため、挙動は同じになる。sbt からの貼り付けを そのまま通すために受け付けている。
     */
   def parse(s: String): Either[String, (String, String, String)] =
     s.replace("::", ":").split(':').toList match
       case org :: artifact :: version :: Nil => validate(org, artifact, version)
-      case _ => Left(s"invalid coordinates: '$s' (expected org:artifact:version)")
+      case _                                 => Left(s"invalid coordinates: '$s' (expected org:artifact:version)")

@@ -13,7 +13,7 @@ class VersionQuerySuite extends munit.FunSuite:
     "3.7-8f2b497",
     "3.7.0",
     "3.7.0-15-0d069d3",
-    "3.7.0-RC1"
+    "3.7.0-RC1",
   )
 
   test("recognises which specs need the repository") {

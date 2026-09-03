@@ -1,6 +1,7 @@
 package docfetch4s
 
 import cats.effect.{IO, Resource}
+
 import java.util.zip.ZipFile
 import scala.jdk.CollectionConverters.*
 

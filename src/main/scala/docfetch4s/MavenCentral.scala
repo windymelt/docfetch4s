@@ -4,11 +4,12 @@ import cats.effect.{IO, Resource}
 import cats.syntax.all.*
 import fs2.io.file.{Files as Fs2Files, Path as Fs2Path}
 import org.http4s.*
-import org.http4s.implicits.*
 import org.http4s.client.Client
 import org.http4s.client.middleware.FollowRedirect
 import org.http4s.ember.client.EmberClientBuilder
 import org.http4s.headers.`User-Agent`
+import org.http4s.implicits.*
+
 import scala.concurrent.duration.*
 
 /** Maven リポジトリからの取得。既定は Maven Central。 */
@@ -48,8 +49,8 @@ final class MavenCentral(client: Client[IO], base: Uri):
         IO.raiseError(
           new DocfetchError(
             if r.status == Status.NotFound then s"not found: $uri"
-            else s"${r.status.code} ${r.status.reason}: $uri"
-          )
+            else s"${r.status.code} ${r.status.reason}: $uri",
+          ),
         )
       else
         onSize(r.contentLength) *>
@@ -73,8 +74,7 @@ object MavenCentral:
 
   /** maven-metadata.xml の解析。
     *
-    * Scala Native では javax.xml が使えないため要素を正規表現で拾う。maven-metadata.xml は
-    * 構造が単純で、これらの要素が他の意味で現れることはない。
+    * Scala Native では javax.xml が使えないため要素を正規表現で拾う。maven-metadata.xml は 構造が単純で、これらの要素が他の意味で現れることはない。
     */
   def parseMetadata(xml: String): ArtifactMetadata =
     def one(r: scala.util.matching.Regex): Option[String] =
@@ -83,7 +83,7 @@ object MavenCentral:
     ArtifactMetadata(
       versions = versionPattern.findAllMatchIn(xml).map(_.group(1).trim).filter(_.nonEmpty).toList,
       release = one(releasePattern),
-      latest = one(latestPattern)
+      latest = one(latestPattern),
     )
 
   val defaultBase: Uri = uri"https://repo1.maven.org/maven2"
@@ -91,17 +91,17 @@ object MavenCentral:
   /** `DOCFETCH4S_REPO` で参照先リポジトリを差し替えられる。 */
   def resolveBase: IO[Uri] =
     IO.blocking(sys.env.get("DOCFETCH4S_REPO").filter(_.nonEmpty)).flatMap {
-      case None => IO.pure(defaultBase)
+      case None    => IO.pure(defaultBase)
       case Some(s) =>
         IO.fromEither(
-          Uri.fromString(s).leftMap(e => new DocfetchError(s"invalid DOCFETCH4S_REPO: ${e.message}"))
+          Uri.fromString(s).leftMap(e => new DocfetchError(s"invalid DOCFETCH4S_REPO: ${e.message}")),
         )
     }
 
   def resource: Resource[IO, MavenCentral] =
     for
       base <- Resource.eval(resolveBase)
-      raw <- EmberClientBuilder
+      raw  <- EmberClientBuilder
         .default[IO]
         .withTimeout(60.seconds)
         .withIdleConnectionTime(30.seconds)

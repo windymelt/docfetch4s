@@ -4,9 +4,8 @@ import cats.effect.IO
 
 /** ローカルキャッシュのレイアウトと入出力。
   *
-  * 配置は `<root>/<org>/<artifact>/<version>/` で、javadoc.jar を展開せずそのまま置く。
-  * cats-core の javadoc.jar は 14MB だが展開すると 195MB になるため、
-  * 読み出しは ZipFile によるランダムアクセスで行い展開しない。
+  * 配置は `<root>/<org>/<artifact>/<version>/` で、javadoc.jar を展開せずそのまま置く。 cats-core の javadoc.jar は 14MB だが展開すると 195MB
+  * になるため、 読み出しは ZipFile によるランダムアクセスで行い展開しない。
   */
 final class Cache(val root: os.Path):
 
@@ -41,7 +40,8 @@ final class Cache(val root: os.Path):
   def remove(c: Coordinates): IO[Boolean] =
     IO.blocking {
       val d = dirFor(c)
-      if os.exists(d) then { os.remove.all(d); true } else false
+      if os.exists(d) then { os.remove.all(d); true }
+      else false
     }
 
   def clearAll: IO[Unit] =
@@ -53,7 +53,7 @@ object Cache:
     IO.blocking {
       val root = sys.env.get("DOCFETCH4S_CACHE").filter(_.nonEmpty) match
         case Some(p) => os.Path(p, os.pwd)
-        case None =>
+        case None    =>
           val base = sys.env.get("XDG_CACHE_HOME").filter(_.nonEmpty) match
             case Some(x) => os.Path(x, os.pwd)
             case None    => os.home / ".cache"

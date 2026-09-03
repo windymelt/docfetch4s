@@ -5,14 +5,14 @@ class CoordinatesSuite extends munit.FunSuite:
   test("parses org:artifact:version") {
     assertEquals(
       Coordinates.parse("org.typelevel:cats-core:2.13.0"),
-      Right(("org.typelevel", "cats-core", "2.13.0"))
+      Right(("org.typelevel", "cats-core", "2.13.0")),
     )
   }
 
   test("accepts the sbt-style org::artifact:version") {
     assertEquals(
       Coordinates.parse("org.typelevel::cats-core:2.13.0"),
-      Right(("org.typelevel", "cats-core", "2.13.0"))
+      Right(("org.typelevel", "cats-core", "2.13.0")),
     )
   }
 
@@ -51,7 +51,7 @@ class CoordinatesSuite extends munit.FunSuite:
   test("derives suffix candidates without needing a version") {
     assertEquals(
       Coordinates.artifactCandidates("cats-core"),
-      List("cats-core_3", "cats-core_2.13", "cats-core")
+      List("cats-core_3", "cats-core_2.13", "cats-core"),
     )
     assertEquals(Coordinates.artifactCandidates("guava"), List("guava_3", "guava_2.13", "guava"))
   }

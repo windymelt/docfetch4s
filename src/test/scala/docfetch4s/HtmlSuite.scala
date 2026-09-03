@@ -23,7 +23,7 @@ class HtmlSuite extends munit.FunSuite:
   }
 
   test("returns only the outer element when divs nest") {
-    val h = """<div class="c"><div class="c">inner</div>outer</div><div class="c">second</div>"""
+    val h     = """<div class="c"><div class="c">inner</div>outer</div><div class="c">second</div>"""
     val found = Html.extractDivs(h, "c")
     assertEquals(found.size, 2)
     assert(found.head.contains("inner"))
@@ -31,7 +31,7 @@ class HtmlSuite extends munit.FunSuite:
   }
 
   test("preserves indentation and line breaks inside pre") {
-    val h = "<div><p>Example:</p><pre><code>if (x) {\n    y\n}</code></pre></div>"
+    val h    = "<div><p>Example:</p><pre><code>if (x) {\n    y\n}</code></pre></div>"
     val text = Html.toText(h)
     assert(text.contains("```"), text)
     assert(text.contains("    y"), text)
@@ -45,6 +45,6 @@ class HtmlSuite extends munit.FunSuite:
   test("removeByClass drops the element along with its contents") {
     assertEquals(
       Html.removeByClass("""<div>a<div class="buttons">x</div>b</div>""", "div", "buttons"),
-      "<div>ab</div>"
+      "<div>ab</div>",
     )
   }

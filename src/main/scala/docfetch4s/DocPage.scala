@@ -4,18 +4,18 @@ import scala.collection.mutable
 
 /** ページ内の 1 メンバ（def / val / type など）。 */
 final case class Member(
-    anchor: String,
-    name: String,
-    signature: String,
-    doc: String,
-    origin: String
+  anchor: String,
+  name: String,
+  signature: String,
+  doc: String,
+  origin: String,
 )
 
 /** scaladoc の 1 ページ（クラス・トレイト・オブジェクト・パッケージ）から取り出した内容。 */
 final case class DocPage(
-    summary: String,
-    attributes: List[(String, String)],
-    members: List[Member]
+  summary: String,
+  attributes: List[(String, String)],
+  members: List[Member],
 ):
   def memberByAnchor(a: String): Option[Member] = members.find(_.anchor == a)
 
@@ -95,11 +95,12 @@ object DocPage:
   /** `<dl>` の dt/dd を順に対応付ける。scaladoc の Attributes セクションはこの形。 */
   private def parseDefinitionList(section: String): List[(String, String)] =
     val terms = extractTags(section, "dt").map(Html.toInlineText)
-    val defs  = extractTags(section, "dd").map(t =>
-      Html.toText(t).linesIterator.map(_.trim).filter(_.nonEmpty).mkString(" / ")
-    )
+    val defs  =
+      extractTags(section, "dd").map(t => Html.toText(t).linesIterator.map(_.trim).filter(_.nonEmpty).mkString(" / "))
     terms.zip(defs).filter { case (k, v) => k.nonEmpty && v.nonEmpty }
 
+  // Html の走査と同じく、局所的な位置送りで書いてある。
+  // scalafix:off DisableSyntax.var, DisableSyntax.while
   private def extractTags(html: String, tag: String): List[String] =
     val open = s"<$tag"
     val out  = mutable.ListBuffer.empty[String]
@@ -116,3 +117,5 @@ object DocPage:
             case Some((body, end)) => out += body; i = end
             case None              => i = after
     out.toList
+
+  // scalafix:on DisableSyntax.var, DisableSyntax.while

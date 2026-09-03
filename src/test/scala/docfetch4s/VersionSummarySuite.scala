@@ -9,7 +9,7 @@ class VersionSummarySuite extends munit.FunSuite:
     "3.6.3-42-f8d9991",
     "3.7-4972921",
     "3.7.0",
-    "3.7.0-RC1"
+    "3.7.0-RC1",
   )
 
   private val summary = VersionSummary.of("cats-effect_3", versions, None)
@@ -58,9 +58,9 @@ class VersionSummarySuite extends munit.FunSuite:
   }
 
   test("--matching accepts the wildcard forms too") {
-    val plain    = VersionSummary.of("cats-effect_3", versions, Some("3.6"))
-    val gradle   = VersionSummary.of("cats-effect_3", versions, Some("3.6.+"))
-    val ivy      = VersionSummary.of("cats-effect_3", versions, Some("3.6.*"))
+    val plain  = VersionSummary.of("cats-effect_3", versions, Some("3.6"))
+    val gradle = VersionSummary.of("cats-effect_3", versions, Some("3.6.+"))
+    val ivy    = VersionSummary.of("cats-effect_3", versions, Some("3.6.*"))
     assertEquals(gradle.versions.size, plain.versions.size)
     assertEquals(ivy.versions.size, plain.versions.size)
   }

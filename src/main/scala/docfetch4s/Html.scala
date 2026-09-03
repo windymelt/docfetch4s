@@ -4,9 +4,10 @@ import scala.collection.mutable
 
 /** scaladoc が出力する HTML の切り出しとテキスト化。
   *
-  * 汎用の HTML パーサではなく、scaladoc の規則的な出力に対象を絞っている。
-  * 属性値の中にタグ様の文字列が現れる箇所（継承グラフの dot スクリプト）は
-  * `stripNonContent` で先に落としてから要素を数える前提。
+  * 汎用の HTML パーサではなく、scaladoc の規則的な出力に対象を絞っている。 属性値の中にタグ様の文字列が現れる箇所（継承グラフの dot スクリプト）は `stripNonContent`
+  * で先に落としてから要素を数える前提。
+  *
+  * 走査は文字位置を進める while ループで書いてある。該当箇所では DisableSyntax の var と while を個別に切ってあり、いずれも局所変数がメソッドの外に出ない範囲に限っている。
   */
 object Html:
 
@@ -26,9 +27,10 @@ object Html:
     "times"  -> "×",
     "copy"   -> "©",
     "laquo"  -> "«",
-    "raquo"  -> "»"
+    "raquo"  -> "»",
   )
 
+  // scalafix:off DisableSyntax.var, DisableSyntax.while
   def decodeEntities(s: String): String =
     if !s.contains('&') then s
     else
@@ -42,7 +44,7 @@ object Html:
           // 実体参照が閉じていない、または不自然に長い場合は素の '&' として扱う。
           if semi < 0 || semi - i > 12 then { sb.append(c); i += 1 }
           else
-            val body = s.substring(i + 1, semi)
+            val body    = s.substring(i + 1, semi)
             val decoded =
               if body.startsWith("#x") || body.startsWith("#X") then
                 try Some(new String(Character.toChars(Integer.parseInt(body.substring(2), 16))))
@@ -56,12 +58,15 @@ object Html:
               case None    => sb.append(c); i += 1
       sb.result()
 
+  // scalafix:on DisableSyntax.var, DisableSyntax.while
+
   private val nonContentTags = List("script", "style", "svg", "button")
 
   /** 表示に不要かつタグの数え上げを乱す要素を中身ごと落とす。 */
   def stripNonContent(html: String): String =
     nonContentTags.foldLeft(html)((acc, tag) => removeElement(acc, tag))
 
+  // scalafix:off DisableSyntax.var, DisableSyntax.while
   private def removeElement(html: String, tag: String): String =
     val open  = s"<$tag"
     val close = s"</$tag>"
@@ -82,6 +87,8 @@ object Html:
         i = if e < 0 then html.length else e + close.length
     sb.result()
 
+  // scalafix:on DisableSyntax.var, DisableSyntax.while
+
   /** 開始タグ 1 個分の文字列から属性値を取り出す。 */
   def attr(startTag: String, name: String): Option[String] =
     val needle = s"$name=\""
@@ -97,10 +104,10 @@ object Html:
     val gt = element.indexOf('>')
     if gt < 0 then element else element.substring(0, gt + 1)
 
+  // scalafix:off DisableSyntax.var, DisableSyntax.while
   /** class 属性を空白区切りのトークンとして厳密に照合し、該当する要素を切り出す。
     *
-    * 前方一致で判定すると `documentableElement` が `documentableElement-expander` を
-    * 拾ってしまうため、トークン単位で比較する。ネストしている場合は外側のみを返す。
+    * 前方一致で判定すると `documentableElement` が `documentableElement-expander` を 拾ってしまうため、トークン単位で比較する。ネストしている場合は外側のみを返す。
     */
   def extractByClass(html: String, tag: String, className: String): List[String] =
     val open = s"<$tag"
@@ -110,7 +117,7 @@ object Html:
       val idx = html.indexOf(open, i)
       if idx < 0 then i = html.length
       else
-        val after     = idx + open.length
+        val after      = idx + open.length
         val isTagStart = after >= html.length || !Character.isLetterOrDigit(html.charAt(after))
         if !isTagStart then i = after
         else
@@ -124,6 +131,8 @@ object Html:
           else i = after
     out.toList
 
+  // scalafix:on DisableSyntax.var, DisableSyntax.while
+
   def extractDivs(html: String, className: String): List[String] =
     extractByClass(html, "div", className)
 
@@ -132,6 +141,7 @@ object Html:
     val idx = html.indexOf(s"""<section id="$id"""")
     if idx < 0 then None else sliceElement(html, idx, "section").map(_._1)
 
+  // scalafix:off DisableSyntax.var, DisableSyntax.while
   /** `start` にある `<tag ...>` から対応する `</tag>` までを返す。戻り値は (要素全体, 終端の次位置)。 */
   def sliceElement(html: String, start: Int, tag: String): Option[(String, Int)] =
     val open   = s"<$tag"
@@ -155,13 +165,32 @@ object Html:
         i = after
     result
 
+  // scalafix:on DisableSyntax.var, DisableSyntax.while
+
   private val blockEnd =
-    List("</p>", "</div>", "</li>", "</dt>", "</dd>", "</tr>", "</h1>", "</h2>", "</h3>",
-      "</h4>", "</h5>", "</h6>", "</blockquote>", "</section>")
+    List(
+      "</p>",
+      "</div>",
+      "</li>",
+      "</dt>",
+      "</dd>",
+      "</tr>",
+      "</h1>",
+      "</h2>",
+      "</h3>",
+      "</h4>",
+      "</h5>",
+      "</h6>",
+      "</blockquote>",
+      "</section>",
+    )
 
   // コードブロックを退避するための私用領域文字。空白を含まないため normalize を通しても壊れない。
   private val codeMarkStart = '\uE000'
   private val codeMarkEnd   = '\uE001'
+
+  // 以降のテキスト化はすべて文字位置を進める走査で書いてある。
+  // scalafix:off DisableSyntax.var, DisableSyntax.while
 
   /** `<pre>` の中身は行頭の空白に意味があるため、テキスト化の前に退避する。 */
   private def stashCodeBlocks(html: String): (String, Vector[String]) =
@@ -221,10 +250,10 @@ object Html:
 
   /** タグを落として読めるテキストにする。ブロック要素の切れ目で改行し、コード例は保護する。 */
   def toText(fragment: String): String =
-    val cleaned          = stripNonContent(removeByClass(fragment, "div", "buttons"))
+    val cleaned           = stripNonContent(removeByClass(fragment, "div", "buttons"))
     val (stashed, blocks) = stashCodeBlocks(cleaned)
-    val sb               = new mutable.StringBuilder(stashed.length)
-    var i                = 0
+    val sb                = new mutable.StringBuilder(stashed.length)
+    var i                 = 0
     while i < stashed.length do
       val c = stashed.charAt(i)
       if c != '<' then { sb.append(c); i += 1 }
@@ -251,7 +280,7 @@ object Html:
         val after      = idx + open.length
         val isTagStart = after >= html.length || !Character.isLetterOrDigit(html.charAt(after))
         val gt         = html.indexOf('>', idx)
-        val matches = isTagStart && gt >= 0 &&
+        val matches    = isTagStart && gt >= 0 &&
           attr(html.substring(idx, gt + 1), "class").exists(_.split("\\s+").contains(className))
         if !matches then { sb.append(html.substring(i, after)); i = after }
         else
@@ -288,3 +317,5 @@ object Html:
         out += l
     }
     out.mkString("\n").trim
+
+  // scalafix:on DisableSyntax.var, DisableSyntax.while

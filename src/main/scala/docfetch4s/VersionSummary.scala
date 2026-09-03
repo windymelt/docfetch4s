@@ -5,14 +5,12 @@ final case class SeriesEntry(series: String, latest: Version, count: Int)
 
 /** 1 アーティファクトのバージョン一覧を、選ぶのに必要な形に整理したもの。
   *
-  * 生の一覧はリポジトリの並び順のままで、スナップショットが大量に混ざることがある。
-  * どれを指定すればよいかを一目で決められるよう、新しい順に並べ替えたうえで
-  * 正式版の最新と系列ごとの最新を添える。
+  * 生の一覧はリポジトリの並び順のままで、スナップショットが大量に混ざることがある。 どれを指定すればよいかを一目で決められるよう、新しい順に並べ替えたうえで 正式版の最新と系列ごとの最新を添える。
   */
 final case class VersionSummary(
-    artifact: String,
-    versions: List[Version],
-    matching: Option[String]
+  artifact: String,
+  versions: List[Version],
+  matching: Option[String],
 ):
   /** 新しい順。 */
   val sorted: List[Version] = versions.sorted.reverse
@@ -39,7 +37,7 @@ final case class VersionSummary(
 object VersionSummary:
   def of(artifact: String, versions: List[String], matching: Option[String]): VersionSummary =
     val filtered = matching match
-      case None => versions
+      case None         => versions
       case Some(prefix) =>
         // `--matching 2.13` が基本形だが、座標と同じ `2.13.+` で書かれても通す。
         val wanted = VersionQuery.matchPrefix(prefix)

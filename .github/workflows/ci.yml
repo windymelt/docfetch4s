@@ -1,0 +1,75 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+env:
+  S2N_VERSION: v1.7.9
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: sbt
+      - uses: sbt/setup-sbt@v1
+      - name: Check formatting
+        run: sbt 'scalafmtCheckAll; scalafmtSbtCheck'
+      - name: Check scalafix rules
+        run: sbt 'scalafixAll --check'
+
+  test:
+    needs: lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: sbt
+      - uses: sbt/setup-sbt@v1
+
+      - name: Install native build dependencies
+        run: sudo apt-get update && sudo apt-get install -y clang zlib1g-dev libssl-dev
+
+      # Neither Debian nor Ubuntu packages s2n-tls, which fs2-io's TLS links against,
+      # so it is built from source and cached.
+      - name: Cache s2n-tls
+        id: cache-s2n
+        uses: actions/cache@v6
+        with:
+          path: ~/s2n-install
+          key: s2n-${{ env.S2N_VERSION }}-${{ runner.os }}
+
+      - name: Build s2n-tls
+        if: steps.cache-s2n.outputs.cache-hit != 'true'
+        run: |
+          git clone --depth 1 --branch "$S2N_VERSION" https://github.com/aws/s2n-tls.git
+          cmake -S s2n-tls -B s2n-build \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DBUILD_SHARED_LIBS=OFF \
+            -DBUILD_TESTING=OFF \
+            -DCMAKE_INSTALL_LIBDIR=lib \
+            -DCMAKE_INSTALL_PREFIX="$HOME/s2n-install"
+          cmake --build s2n-build -j"$(nproc)"
+          cmake --install s2n-build
+
+      # sbt 2 runs tests incrementally; testOnly * forces the whole suite.
+      - name: Compile and test
+        run: S2N_LIB_DIR="$HOME/s2n-install/lib" sbt 'testOnly *'
+
+  ci-passed:
+    needs: [lint, test]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          test "${{ needs.lint.result }}" = "success" && \
+          test "${{ needs.test.result }}" = "success"

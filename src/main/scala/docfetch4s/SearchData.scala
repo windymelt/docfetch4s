@@ -2,13 +2,13 @@ package docfetch4s
 
 /** scaladoc の検索インデックス 1 件。 */
 final case class Entry(
-    name: String,
-    signature: String,
-    owner: String,
-    kind: String,
-    description: String,
-    link: String,
-    isExtension: Boolean
+  name: String,
+  signature: String,
+  owner: String,
+  kind: String,
+  description: String,
+  link: String,
+  isExtension: Boolean,
 ):
   /** 完全修飾名。owner が空なのはルートパッケージやトップページの場合。 */
   def fqn: String = if owner.isEmpty then name else s"$owner.$name"
@@ -31,8 +31,7 @@ final case class Entry(
 
 /** javadoc.jar 内の `scripts/searchData.js` を読む。
   *
-  * 実体は `pages = [ {...}, ... ];` という JS 代入文で、値は素の JSON 配列。
-  * 各要素のキーは scaladoc が短縮しており、l=link, n=name, t=signature(title),
+  * 実体は `pages = [ {...}, ... ];` という JS 代入文で、値は素の JSON 配列。 各要素のキーは scaladoc が短縮しており、l=link, n=name, t=signature(title),
   * d=owner(declaring), k=kind, x=description, e=extension を表す。
   */
 object SearchData:
@@ -53,11 +52,11 @@ object SearchData:
 
   private def fromJson(v: ujson.Value): Entry =
     Entry(
-      name        = str(v, "n"),
-      signature   = str(v, "t"),
-      owner       = str(v, "d"),
-      kind        = str(v, "k"),
+      name = str(v, "n"),
+      signature = str(v, "t"),
+      owner = str(v, "d"),
+      kind = str(v, "k"),
       description = str(v, "x"),
-      link        = str(v, "l"),
-      isExtension = v.obj.get("e").flatMap(_.boolOpt).getOrElse(false)
+      link = str(v, "l"),
+      isExtension = v.obj.get("e").flatMap(_.boolOpt).getOrElse(false),
     )

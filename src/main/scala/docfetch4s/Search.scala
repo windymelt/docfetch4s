@@ -7,8 +7,7 @@ object Search:
 
   /** クエリを owner ヒントと名前に分ける。
     *
-    * `Functor.map` や `cats.Functor.map` のように書かれた場合、最後のセグメントを名前、
-    * それより前を owner の部分一致条件として扱う。ドットが無ければ全体が名前。
+    * `Functor.map` や `cats.Functor.map` のように書かれた場合、最後のセグメントを名前、 それより前を owner の部分一致条件として扱う。ドットが無ければ全体が名前。
     */
   private def split(q: String): (Option[String], String) =
     val i = q.lastIndexOf('.')
@@ -35,11 +34,11 @@ object Search:
       case _                                     => 0
 
   def query(
-      entries: Vector[Entry],
-      rawQuery: String,
-      kinds: Set[String],
-      searchDocs: Boolean,
-      limit: Int
+    entries: Vector[Entry],
+    rawQuery: String,
+    kinds: Set[String],
+    searchDocs: Boolean,
+    limit: Int,
   ): Vector[Hit] =
     val (ownerHint, needle) = split(rawQuery)
     val hintLower           = ownerHint.map(_.toLowerCase)
@@ -52,7 +51,7 @@ object Search:
         val byName = scoreName(e.name, needle).flatMap { case (s, why) =>
           // owner ヒントが指定された場合、owner に含まれないものは名前が一致しても除外する。
           hintLower match
-            case None => Some((s, why))
+            case None    => Some((s, why))
             case Some(h) =>
               if e.owner.toLowerCase.contains(h) then Some((s + 10, s"$why, owner matches"))
               else None
@@ -60,20 +59,17 @@ object Search:
 
         val byFqn =
           if byName.nonEmpty then None
-          else if e.fqn.toLowerCase.contains(queryLower) then
-            Some((34, "fully-qualified name substring match"))
+          else if e.fqn.toLowerCase.contains(queryLower) then Some((34, "fully-qualified name substring match"))
           else None
 
         val bySignature =
           if byName.nonEmpty || byFqn.nonEmpty then None
-          else if e.signature.toLowerCase.contains(queryLower) then
-            Some((22, "signature substring match"))
+          else if e.signature.toLowerCase.contains(queryLower) then Some((22, "signature substring match"))
           else None
 
         val byDoc =
           if !searchDocs || byName.nonEmpty || byFqn.nonEmpty || bySignature.nonEmpty then None
-          else if e.description.toLowerCase.contains(queryLower) then
-            Some((12, "documentation substring match"))
+          else if e.description.toLowerCase.contains(queryLower) then Some((12, "documentation substring match"))
           else None
 
         byName.orElse(byFqn).orElse(bySignature).orElse(byDoc).map { case (s, why) =>
@@ -87,12 +83,9 @@ object Search:
 
   /** `show` 用に、指定名に対応する型ページを探す。 */
   def resolveType(entries: Vector[Entry], target: String): Vector[Entry] =
-    val tl = target.toLowerCase
-    val exact = entries.filter(e =>
-      e.isTypeLike && (e.fqn == target || e.name == target)
-    )
+    val tl    = target.toLowerCase
+    val exact = entries.filter(e => e.isTypeLike && (e.fqn == target || e.name == target))
     if exact.nonEmpty then exact
     else
       entries
         .filter(e => e.isTypeLike && (e.fqn.toLowerCase == tl || e.name.toLowerCase == tl))
-

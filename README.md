@@ -11,15 +11,48 @@ native binary with Scala Native.
 - Searches classes, traits and methods by name.
 - Prints the documentation for a specific type or member, including its prose.
 
+## Install
+
+Each `v` tag publishes an x86_64 Linux binary on the
+[releases page](https://github.com/windymelt/docfetch4s/releases), compressed with zstd. s2n is
+linked statically, so it runs on a stock system without installing s2n-tls.
+
+```sh
+zstd -d docfetch4s-v0.1.0-x86_64-linux.zst -o docfetch4s
+chmod +x docfetch4s
+```
+
+The release also carries a `SHA512SUMS` file, detached PGP signatures (`.asc`) and a build
+provenance attestation. To verify:
+
+```sh
+sha512sum -c SHA512SUMS
+gpg --verify docfetch4s-v0.1.0-x86_64-linux.zst.asc docfetch4s-v0.1.0-x86_64-linux.zst
+gh attestation verify docfetch4s-v0.1.0-x86_64-linux.zst -R windymelt/docfetch4s
+```
+
+For any other platform, build from source as below.
+
 ## Requirements
 
 To build you need:
 
 - A JDK and sbt 2.x (the build pins sbt 2.0.6)
 - Clang, for Scala Native's native compilation
-- s2n-tls development files (`libs2n.so` and `s2n.h`) — fs2-io's TLS links against them for
-  HTTPS. On openSUSE install `s2n-devel`; use the equivalent package elsewhere.
 - zlib development files (`zlib.h`), used to read jars
+- OpenSSL development files (`libcrypto`)
+- s2n-tls, which fs2-io's TLS links against for HTTPS
+
+**Neither Debian nor Ubuntu packages s2n-tls.** openSUSE has it as `s2n-devel`; elsewhere,
+build it from source:
+
+```sh
+git clone --depth 1 --branch v1.7.9 https://github.com/aws/s2n-tls.git
+cmake -S s2n-tls -B s2n-build -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF \
+  -DBUILD_TESTING=OFF -DCMAKE_INSTALL_LIBDIR=lib -DCMAKE_INSTALL_PREFIX="$HOME/s2n-install"
+cmake --build s2n-build -j"$(nproc)"
+cmake --install s2n-build
+```
 
 ## Build
 
@@ -30,11 +63,17 @@ sbt -Ddocfetch4s.release=true nativeLink    # release build (releaseFast + thin 
 
 The binary lands at `target/out/native0.5/scala-3.8.4/docfetch4s/docfetch4s`.
 
-It is not static: it links dynamically against `libs2n`, `libz`, `libstdc++`, `libm` and `libc`.
-The s2n SONAME differs between distributions (on openSUSE it is `libs2n.so.0unstable`), so a
-binary built here cannot simply be shipped to a different distribution. Build it per target.
+By default it links against the system's `libs2n.so`, which is convenient while developing but
+ties the binary to a distribution: the SONAME differs between them (openSUSE ships
+`libs2n.so.0unstable`), and most distributions do not package s2n at all.
 
-```
+Set `S2N_LIB_DIR` to a directory holding `libs2n.a` to link s2n statically instead. The
+resulting binary needs only `libcrypto`, `libz`, `libm` and `libc`, all of which are present on
+a stock system. This is what the release workflow does.
+
+```sh
+S2N_LIB_DIR="$HOME/s2n-install/lib" sbt -Ddocfetch4s.release=true nativeLink
+
 # check the actual dependencies
 readelf -d target/out/native0.5/scala-3.8.4/docfetch4s/docfetch4s | grep NEEDED
 ```
