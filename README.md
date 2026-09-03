@@ -18,7 +18,7 @@ Each `v` tag publishes an x86_64 Linux binary on the
 linked statically, so it runs on a stock system without installing s2n-tls.
 
 ```sh
-zstd -d docfetch4s-v0.1.0-x86_64-linux.zst -o docfetch4s
+zstd -d docfetch4s-v0.0.1-x86_64-linux.zst -o docfetch4s
 chmod +x docfetch4s
 ```
 
@@ -27,8 +27,8 @@ provenance attestation. To verify:
 
 ```sh
 sha512sum -c SHA512SUMS
-gpg --verify docfetch4s-v0.1.0-x86_64-linux.zst.asc docfetch4s-v0.1.0-x86_64-linux.zst
-gh attestation verify docfetch4s-v0.1.0-x86_64-linux.zst -R windymelt/docfetch4s
+gpg --verify docfetch4s-v0.0.1-x86_64-linux.zst.asc docfetch4s-v0.0.1-x86_64-linux.zst
+gh attestation verify docfetch4s-v0.0.1-x86_64-linux.zst -R windymelt/docfetch4s
 ```
 
 For any other platform, build from source as below.

@@ -10,7 +10,7 @@ lazy val root = project
   .enablePlugins(ScalaNativePlugin)
   .settings(
     name         := "docfetch4s",
-    version      := "0.1.0-SNAPSHOT",
+    version      := "0.0.1",
     scalaVersion := scala3Version,
     scalacOptions ++= Seq("-deprecation", "-feature", "-Wunused:all"),
     libraryDependencies ++= Seq(
